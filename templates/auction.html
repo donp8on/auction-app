@@ -37,6 +37,7 @@
     <input type="number" id="bidAmount" placeholder="Your Bid" />
     <button onclick="placeBid()">Place Bid</button>
     <button onclick="startAuction()">Start Auction</button>
+    <button onclick="endAuction()">End Auction</button>
     <div id="log"></div>
   </div>
 
@@ -102,6 +103,11 @@
       const el = document.getElementById('log');
       el.innerHTML += `<div>${message}</div>`;
       el.scrollTop = el.scrollHeight;
+    }
+
+    function endAuction() {
+      socket.emit('end_auction');
+      log("🚨 Auction manually ended by user.");
     }
   </script>
 </body>

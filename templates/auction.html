@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Trojan Auctions</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 2em; background-color: #f9f9f9; }
+    h1 { color: rgb(220, 140, 20); }
+    #log { border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: scroll; background: #fff; margin-top: 1em; }
+    input, button { margin: 5px 0; padding: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Trojan Auctions</h1>
+
+  <!-- Join Section -->
+  <div>
+    <input type="text" id="username" placeholder="Enter your name" />
+    <button onclick="joinAuction()">Join Auction</button>
+  </div>
+
+  <!-- Initialize Auction Form (first user only) -->
+  <div id="initAuction" style="display:none; margin-top:20px;">
+    <h3>Initialize Auction (First User Only)</h3>
+    Item: <input type="text" id="item"><br>
+    Min Price: <input type="number" id="min_price"><br>
+    Type (1=First, 2=Second): <input type="number" id="type"><br>
+    <button onclick="initAuction()">Initialize Auction</button>
+  </div>
+
+  <!-- Auction Bidding Interface -->
+  <div id="auctionArea" style="display:none; margin-top:20px;">
+    <p><strong>Item:</strong> <span id="itemName"></span></p>
+    <p><strong>Minimum Price:</strong> $<span id="minPrice"></span></p>
+    <p><strong>Auction Type:</strong> <span id="auctionType"></span></p>
+    <p><strong>Users:</strong> <span id="users"></span></p>
+    <input type="number" id="bidAmount" placeholder="Your Bid" />
+    <button onclick="placeBid()">Place Bid</button>
+    <button onclick="startAuction()">Start Auction</button>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    let socket = io();
+    let username = "";
+    let auctionInitialized = false;
+
+    function joinAuction() {
+      username = document.getElementById('username').value;
+      if (!username) return alert("Enter your name first!");
+      socket.emit('join', { username });
+      document.getElementById('initAuction').style.display = 'block';
+    }
+
+    function initAuction() {
+      const item = document.getElementById('item').value;
+      const min_price = parseFloat(document.getElementById('min_price').value);
+      const type = parseInt(document.getElementById('type').value);
+      if (!item || isNaN(min_price) || isNaN(type)) return alert("Please fill all auction details.");
+      socket.emit('initialize_auction', { item, min_price, type });
+      document.getElementById('initAuction').style.display = 'none';
+    }
+
+    function startAuction() {
+      socket.emit('start_auction');
+    }
+
+    function placeBid() {
+      const bid = parseFloat(document.getElementById('bidAmount').value);
+      if (!isNaN(bid)) {
+        socket.emit('place_bid', { bid });
+      }
+    }
+
+    socket.on('user_list', function(users) {
+      document.getElementById('users').innerText = users.join(', ');
+    });
+
+    socket.on('auction_info', function(info) {
+      auctionInitialized = true;
+      document.getElementById('itemName').textContent = info.item;
+      document.getElementById('minPrice').textContent = info.min_price;
+      document.getElementById('auctionType').textContent = info.type == 1 ? 'First-Price' : 'Second-Price';
+      document.getElementById('auctionArea').style.display = 'block';
+      document.getElementById('initAuction').style.display = 'none';
+      log(`Auction Initialized: ${info.item} (min $${info.min_price})`);
+    });
+
+    socket.on('new_bid', function(data) {
+      log(`${data.user} placed a bid: $${data.bid}`);
+    });
+
+    socket.on('winner', function(data) {
+      log(`🏆 ${data.message}`);
+    });
+
+    socket.on('auction_started', function() {
+      log('⏳ Auction started! You may now place your bids.');
+    });
+
+    function log(message) {
+      const el = document.getElementById('log');
+      el.innerHTML += `<div>${message}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+  </script>
+</body>
+</html>
+<!-- End of auction.html -->

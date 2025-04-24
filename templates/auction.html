@@ -42,19 +42,31 @@
     <div id="log"></div>
   </div>
 
+  <div id="newAuctionArea" style="display:none; margin-top: 20px;">
+    <h3>🔁 Start a New Auction</h3>
+    Item: <input type="text" id="newItem"><br>
+    Min Price: <input type="number" id="newMinPrice"><br>
+    Type (1=First, 2=Second): <input type="number" id="newType"><br>
+    <button onclick="startNewAuction()">Start New Auction</button>
+  </div>
+
   <script>
     let socket = io();
     let username = "";
     let auctionInitialized = false;
+    let isFirstUser = false;
 
     function joinAuction() {
-      username = document.getElementById('username').value;
-      if (!username) return alert("Enter your name first!");
-      socket.emit('join', { username });
+      if (!username) {
+        username = document.getElementById('username').value;
+        if (!username) return alert("Enter your name first!");
+        socket.emit('join', { username });
+        isFirstUser = true; // 👈 Host logic!
+      }
       document.getElementById('initAuction').style.display = 'block';
-      isFirstUser = true;
       document.getElementById('endAuctionBtn').style.display = 'inline-block';
     }
+
 
     function initAuction() {
       const item = document.getElementById('item').value;
@@ -98,6 +110,9 @@
       clearInterval(countdownInterval);
       document.getElementById("timer").textContent = "Auction Ended";
       log(`🏆 ${data.message}`);
+      if (isFirstUser) {
+        document.getElementById("newAuctionArea").style.display = "block";
+      }
     });
 
     socket.on('auction_started', function() {
@@ -136,7 +151,7 @@
       log("🚨 Auction manually ended by user.");
     }
 
-    let isFirstUser = false;
+    
 
     function endAuction() {
       const confirmEnd = confirm("Are you sure you want to end the auction early?");
@@ -146,7 +161,38 @@
       }
     }
 
+    function startNewAuction() {
+      const item = document.getElementById("newItem").value;
+      const min_price = parseFloat(document.getElementById("newMinPrice").value);
+      const type = parseInt(document.getElementById("newType").value);
+
+      if (!item || isNaN(min_price) || isNaN(type)) {
+        alert("Please fill out all new auction details.");
+        return;
+      }
+
+      socket.emit('initialize_auction', { item, min_price, type });
+      document.getElementById("newAuctionArea").style.display = "none";
+      log(`🎯 New auction initialized: ${item} ($${min_price})`);
+    }
+
+
+    socket.on('auction_ended', function() {
+      log("🚨 Auction has ended. You can start a new auction.");
+      document.getElementById("newAuctionArea").style.display = "block";
+      document.getElementById("auctionArea").style.display = "none";
+    });
+
+
   </script>
+
+  <div id="newAuctionArea" style="display:none; margin-top: 20px;">
+    <h3>🔁 Start a New Auction</h3>
+    Item: <input type="text" id="newItem"><br>
+    Min Price: <input type="number" id="newMinPrice"><br>
+    Type (1=First, 2=Second): <input type="number" id="newType"><br>
+    <button onclick="startNewAuction()">Start New Auction</button>
+  </div>
 </body>
 </html>
 <!-- End of auction.html -->

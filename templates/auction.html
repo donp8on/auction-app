@@ -34,6 +34,7 @@
     <p><strong>Minimum Price:</strong> $<span id="minPrice"></span></p>
     <p><strong>Auction Type:</strong> <span id="auctionType"></span></p>
     <p><strong>Users:</strong> <span id="users"></span></p>
+    <p><strong>Time Remaining:</strong> <span id="timer">--</span></p>
     <input type="number" id="bidAmount" placeholder="Your Bid" />
     <button onclick="placeBid()">Place Bid</button>
     <button onclick="startAuction()">Start Auction</button>
@@ -94,11 +95,14 @@
     });
 
     socket.on('winner', function(data) {
+      clearInterval(countdownInterval);
+      document.getElementById("timer").textContent = "Auction Ended";
       log(`🏆 ${data.message}`);
     });
 
     socket.on('auction_started', function() {
       log('⏳ Auction started! You may now place your bids.');
+      startCountdown(30);
     });
 
     function log(message) {
@@ -106,6 +110,26 @@
       el.innerHTML += `<div>${message}</div>`;
       el.scrollTop = el.scrollHeight;
     }
+
+    let countdownInterval;
+    let remainingTime = 0;
+
+    function startCountdown(duration) {
+      clearInterval(countdownInterval);
+      remainingTime = duration;
+      document.getElementById("timer").textContent = `${remainingTime}s`;
+
+      countdownInterval = setInterval(() => {
+        remainingTime--;
+        if (remainingTime >= 0) {
+          document.getElementById("timer").textContent = `${remainingTime}s`;
+        } else {
+          clearInterval(countdownInterval);
+          document.getElementById("timer").textContent = "Auction Ended";
+        }
+      }, 1000);
+    }
+
 
     function endAuction() {
       socket.emit('end_auction');

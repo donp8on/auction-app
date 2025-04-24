@@ -51,6 +51,8 @@
       if (!username) return alert("Enter your name first!");
       socket.emit('join', { username });
       document.getElementById('initAuction').style.display = 'block';
+      isFirstUser = true;
+      document.getElementById('endAuctionBtn').style.display = 'inline-block';
     }
 
     function initAuction() {

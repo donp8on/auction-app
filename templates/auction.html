@@ -10,6 +10,110 @@
     h1 { color: rgb(220, 140, 20); }
     #log { border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: scroll; background: #fff; margin-top: 1em; }
     input, button { margin: 5px 0; padding: 8px; }
+
+    /* --- Global Reset --- */
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #002147; /* Deep Navy */
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* --- Card Container --- */
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 30px rgba(255, 126, 0, 0.4), 0 0 60px rgba(0, 33, 71, 0.3);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      padding: 40px;
+      width: 90%;
+      max-width: 600px;
+      animation: fadeInLift 1.5s ease;
+      transform-style: preserve-3d;
+      transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+    }
+
+    /* --- Animation --- */
+    @keyframes fadeInLift {
+      from {
+        transform: perspective(1000px) translateY(60px) scale(0.95);
+        opacity: 0;
+      }
+      to {
+        transform: perspective(1000px) translateY(0px) scale(1);
+        opacity: 1;
+      }
+    }
+
+    h1, h2, h3 {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      margin: 10px 0;
+      padding: 14px 20px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: none;
+      width: 100%;
+    }
+
+    input[type="number"], input[type="text"], input[type="file"] {
+      background: #fff;
+      color: #222;
+    }
+
+    button {
+      background-color: #ff7e00;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 0 12px rgba(255, 126, 0, 0.5);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #002147;
+      color: #ff7e00;
+    }
+
+    /* --- Auction Area --- */
+    #auctionArea {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 0 40px rgba(255, 165, 0, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    #auctionArea p {
+      font-size: 1.2rem;
+      margin: 12px 0;
+    }
+
+    #auctionArea input, #auctionArea button {
+      padding: 14px 18px;
+      font-size: 17px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    #waiting-screen {
+      text-align: center;
+      font-size: 1.5rem;
+      color: #fff;
+    }
   </style>
   <style>
     #initAuction, #endAuctionBtn, #startAuctionBtn {

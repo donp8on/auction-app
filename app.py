@@ -91,13 +91,20 @@ def start_auction():
 
 @socketio.on('place_bid')
 def handle_bid(data):
+    bid_amount = data['bid']
     sid = request.sid
-    if auction_ended or sid == host_sid:
-        return
-    bid_amount = float(data['bid'])
-    username = connected_users.get(sid, f"User-{sid[:5]}")
-    bids.append({'user': username, 'bid': bid_amount})
-    socketio.emit('new_bid', {'user': username, 'bid': bid_amount})
+    username = connected_users.get(sid, 'Unknown')
+    worker_ip = request.remote_addr  # gets the client's IP address
+
+    bids.append({'user': username, 'bid': bid_amount, 'ip': worker_ip})
+    
+    print(f"[LOG] 🧾 Bid of ${bid_amount} received from {username} ({worker_ip})")
+
+    emit('new_bid', {
+        'user': username,
+        'bid': bid_amount,
+        'worker': worker_ip
+    }, broadcast=True)
 
 
 @socketio.on('end_auction')
@@ -130,9 +137,13 @@ def announce_winner():
     amount = winner['bid'] if auction_type == 1 else (
         sorted_bids[1]['bid'] if len(sorted_bids) > 1 else lowest_price
     )
+    bid_amount = winner['bid']
+    bidder_name = winner['user']
+    worker_ip = winner.get('ip', 'Unknown')
 
-    message = f"{winner['user']} won the auction with a bid of ${amount}!"
-    socketio.emit('winner', {'message': message})
+    msg = f"{bidder_name} won the auction with a bid of ${bid_amount} (Processed by {worker_ip})"
+    print(f"[RESULT] 🎉 {msg}")
+    socketio.emit('winner', {'message': msg})
     auction_ended = True
     winner_announced = True
 

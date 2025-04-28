@@ -227,10 +227,8 @@
         <li><strong>Enter your name</strong> and click <em>Join Auction</em>.</li>
         <li>
           <strong>First user</strong> becomes the <span style="color: #ffcc00;">host</span>, and can:
-          <ul>
-            <li>Enter item details and start the auction</li>
-          </ul>
         </li>
+        <li>Enter item details and start the auction</li>
         <li>
           Other users join as <strong>bidders</strong>:
           <ul>
@@ -331,7 +329,7 @@
     });
 
     socket.on("new_bid", function(data) {
-      log(`${data.user} placed a bid: $${data.bid}`);
+      log(`${data.user} placed a bid of $${data.bid} (from ${data.worker})`);
     });
 
     socket.on("winner", function(data) {
@@ -409,7 +407,9 @@
     function placeBid() {
       const bid = parseFloat(document.getElementById("bidAmount").value);
       if (!isNaN(bid)) {
+        // Get IP/hostname via socket handshake
         socket.emit("place_bid", { bid });
+        console.log(`🔧 Placing bid of $${bid} from ${socket.id}`);
       }
     }
 

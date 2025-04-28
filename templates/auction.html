@@ -93,6 +93,61 @@
         opacity: 1;
       }
     }
+
+    /* Modal Styling */
+    .modal {
+      display: flex;
+      position: fixed;
+      z-index: 1000;
+      padding-top: 80px;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.75);
+      justify-content: center;
+      align-items: start;
+    }
+
+    .modal-content {
+      background-color: #002147;
+      color: white;
+      border: 2px solid #ffcc00;
+      padding: 30px;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 12px;
+      position: relative;
+      animation: fadeSlideIn 0.5s ease;
+    }
+
+    .modal-content h2 {
+      color: #ffcc00;
+      margin-bottom: 20px;
+    }
+
+    .modal-content ol {
+      padding-left: 20px;
+    }
+
+    .modal-content li {
+      margin-bottom: 10px;
+    }
+
+    .close {
+      position: absolute;
+      right: 16px;
+      top: 12px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
   </style>
 </head>
 <body>
@@ -108,6 +163,7 @@
       <h1>Welcome to VSU Auction System</h1>
       <input type="text" id="username" placeholder="Enter your name" />
       <button onclick="joinAuction()">Join Auction</button>
+      <button onclick="showInstructions()">How to Use</button>
     </div>
   </div>
   
@@ -161,6 +217,33 @@
 
     <div id="log"></div>
   </div>  
+
+  <!-- Instructions Modal -->
+  <div id="instructionsModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" onclick="hideInstructions()">&times;</span>
+      <h2>How to Use the Trojan Auction System</h2>
+      <ol>
+        <li><strong>Enter your name</strong> and click <em>Join Auction</em>.</li>
+        <li>
+          <strong>First user</strong> becomes the <span style="color: #ffcc00;">host</span>, and can:
+          <ul>
+            <li>Enter item details and start the auction</li>
+          </ul>
+        </li>
+        <li>
+          Other users join as <strong>bidders</strong>:
+          <ul>
+            <li>Wait in the lobby</li>
+            <li>Bid once the auction begins!</li>
+          </ul>
+        </li>
+        <li>Bid before the countdown ends</li>
+        <li>Winner is announced and a new round can begin</li>
+      </ol>
+      <p><em>Tip:</em> Bidders hear lobby music before the auction starts 🎶</p>
+    </div>
+  </div>
 
   <script>
     const socket = io();
@@ -293,6 +376,13 @@
       document.getElementById("bidButton").classList.add("hidden");
     });
 
+    function showInstructions() {
+      document.getElementById("instructionsModal").classList.remove("hidden");
+    }
+
+    function hideInstructions() {
+      document.getElementById("instructionsModal").classList.add("hidden");
+    }
 
     function initAuction() {
       const item = document.getElementById("item").value;

@@ -98,7 +98,7 @@
 <body>
   <!-- Lobby Music-->
   <audio id="lobbyMusic" loop>
-    <source src="" type="audio/mpeg">
+    <source src="https://donp8on.github.io/lobby-musik/lobby-musik.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
   
@@ -192,6 +192,13 @@
         // Bidder: show only lobby
         document.getElementById("lobby").classList.remove("hidden");
         log("⏳ You are a bidder. Waiting for host to start the auction...");
+
+        // Play lobby music
+        const music = document.getElementById("lobbyMusic");
+        music.volume = 1; // adjust volume if needed
+        music.play().catch(err => {
+          console.warn("Autoplay blocked. Music will play after user interaction.");
+        });
       }
     });
 
@@ -224,6 +231,11 @@
     socket.on("auction_started", function() {
       log("⏳ Auction started! You may now place your bids.");
 
+      // Stop lobby music
+      const music = document.getElementById("lobbyMusic");
+      music.pause();
+      music.currentTime = 0;
+
       document.getElementById("lobby").classList.add("hidden");
       document.getElementById("auctionArea").classList.remove("hidden");
       document.getElementById("auctionArea").classList.add("fade-slide");
@@ -244,7 +256,43 @@
       document.getElementById("timer").textContent = "Auction Ended";
       log(`🏆 ${data.message}`);
       confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+
+      // Host: Show auction creation form again
+      if (isHost) {
+        document.getElementById("initAuction").classList.remove("hidden");
+        document.getElementById("startAuctionBtn").classList.remove("hidden");
+        document.getElementById("endAuctionBtn").classList.remove("hidden");
+
+        // Clear form fields
+        document.getElementById("item").value = '';
+        document.getElementById("min_price").value = '';
+        document.getElementById("type").value = '';
+        document.getElementById("itemImageUrl").value = '';
+      }
+
+      // Bidders: Hide bidding controls
+      document.getElementById("bidAmount").classList.add("hidden");
+      document.getElementById("bidButton").classList.add("hidden");
     });
+
+    socket.on("auction_ended", function () {
+      log("🚨 Auction has ended.");
+
+      if (isHost) {
+        document.getElementById("initAuction").classList.remove("hidden");
+        document.getElementById("startAuctionBtn").classList.remove("hidden");
+        document.getElementById("endAuctionBtn").classList.remove("hidden");
+
+        document.getElementById("item").value = '';
+        document.getElementById("min_price").value = '';
+        document.getElementById("type").value = '';
+        document.getElementById("itemImageUrl").value = '';
+      }
+
+      document.getElementById("bidAmount").classList.add("hidden");
+      document.getElementById("bidButton").classList.add("hidden");
+    });
+
 
     function initAuction() {
       const item = document.getElementById("item").value;

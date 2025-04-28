@@ -144,4 +144,4 @@ def countdown_and_announce():
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='127.0.0.1', port=5050)
+    socketio.run(app, host='0.0.0.0', port=5000)

@@ -4,28 +4,65 @@
   <title>Trojan Auctions</title>
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
   <style>
-    body { font-family: Arial; padding: 2em; background-color: #f9f9f9; }
-    h1 { color: rgb(220, 140, 20); }
-    #log { border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: scroll; background: #fff; margin-top: 1em; }
-    input, button { margin: 5px 0; padding: 8px; }
-
-    /* --- Global Reset --- */
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #002147; /* Deep Navy */
+    body {
+      background-color: #002147;
+      font-family: Arial, sans-serif;
       color: white;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
+      padding: 40px;
+      text-align: center;
+      margin: 0;
+    }
+    .hidden { display: none; }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-weight: bold;
+      background-color: #ff7e00;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    input {
+      padding: 8px;
+      margin: 10px;
+      border-radius: 6px;
+    }
+    #log {
+      background: white;
+      color: black;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    /* Fade slide animation */
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    /* --- Card Container --- */
+    .fade-slide {
+      animation: fadeSlideIn 0.6s ease forwards;
+    }
+
+    #lobby h2 {
+      font-size: 2rem;
+      color: #ffcc00;
+    }
+    #lobbyUserList li {
+      margin: 8px 0;
+      font-size: 1.1rem;
+    }
+
     .card {
       background: rgba(255, 255, 255, 0.1);
       box-shadow: 0 0 30px rgba(255, 126, 0, 0.4), 0 0 60px rgba(0, 33, 71, 0.3);
@@ -33,10 +70,16 @@
       backdrop-filter: blur(12px);
       padding: 40px;
       width: 90%;
-      max-width: 600px;
+      max-width: 900px;
       animation: fadeInLift 1.5s ease;
       transform-style: preserve-3d;
       transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+    }
+
+    .card-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     /* --- Animation --- */
@@ -50,282 +93,203 @@
         opacity: 1;
       }
     }
-
-    h1, h2, h3 {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: #fff;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input, button {
-      margin: 10px 0;
-      padding: 14px 20px;
-      font-size: 16px;
-      border-radius: 12px;
-      border: none;
-      width: 100%;
-    }
-
-    input[type="number"], input[type="text"], input[type="file"] {
-      background: #fff;
-      color: #222;
-    }
-
-    button {
-      background-color: #ff7e00;
-      color: white;
-      font-weight: bold;
-      box-shadow: 0 0 12px rgba(255, 126, 0, 0.5);
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #002147;
-      color: #ff7e00;
-    }
-
-    /* --- Auction Area --- */
-    #auctionArea {
-      background-color: rgba(255, 255, 255, 0.2);
-      padding: 40px;
-      border-radius: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-      box-shadow: 0 0 40px rgba(255, 165, 0, 0.5);
-      backdrop-filter: blur(8px);
-    }
-
-    #auctionArea p {
-      font-size: 1.2rem;
-      margin: 12px 0;
-    }
-
-    #auctionArea input, #auctionArea button {
-      padding: 14px 18px;
-      font-size: 17px;
-      margin-top: 10px;
-      width: 100%;
-    }
-
-    #waiting-screen {
-      text-align: center;
-      font-size: 1.5rem;
-      color: #fff;
-    }
-  </style>
-  <style>
-    #initAuction, #endAuctionBtn, #startAuctionBtn {
-      display: none;
-    }
   </style>
 </head>
 <body>
-  <h1>Trojan Auctions</h1>
-
+  <!-- Lobby Music-->
+  <audio id="lobbyMusic" loop>
+    <source src="" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+  
   <!-- Join Section -->
-  <div>
-    <input type="text" id="username" placeholder="Enter your name" />
-    <button onclick="joinAuction()">Join Auction</button>
+  <div class="card-wrapper">
+    <div class="card" id="joinSection">
+      <h1>Welcome to VSU Auction System</h1>
+      <input type="text" id="username" placeholder="Enter your name" />
+      <button onclick="joinAuction()">Join Auction</button>
+    </div>
   </div>
-
-  <!-- Initialize Auction Form (first user only) -->
-  <div id="initAuction" style="display:none; margin-top:20px;">
-    <h3>Initialize Auction (First User Only)</h3>
+  
+  <!-- Host Controls -->
+  <div id="initAuction" class="hidden">
+    <h3>Initialize Auction</h3>
     Item: <input type="text" id="item"><br>
     Min Price: <input type="number" id="min_price"><br>
     Type (1=First, 2=Second): <input type="number" id="type"><br>
-    <button onclick="initAuction()">Initialize Auction</button>
+    Image URL: <input type="text" id="itemImageUrl"><br>
+    <button onclick="initAuction()">Initialize</button>
   </div>
 
-  <!-- Auction Bidding Interface -->
-  <div id="auctionArea" style="display:none; margin-top:20px;">
+  <!-- Usernsame Display -->
+  <div id="usernameDisplay" style="
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.2);
+    color: #ffcc00;
+    display: none;">
+    👤 You are: <span id="usernameLabel"></span>
+  </div>
+
+
+  <div id="lobby" class="hidden">
+    <h2>🟢 Waiting for Host to Start Auction</h2>
+    <p>Users Joined:</p>
+    <ul id="lobbyUserList" style="list-style: none; padding: 0;"></ul>
+    <p style="font-style: italic; color: #ccc;">Get ready...</p>
+  </div>
+
+  <div id="auctionArea" class="hidden">
     <p><strong>Item:</strong> <span id="itemName"></span></p>
-    <p><strong>Minimum Price:</strong> $<span id="minPrice"></span></p>
-    <p><strong>Auction Type:</strong> <span id="auctionType"></span></p>
+    <img id="itemImage" src="" alt="Item image" style="max-width: 300px; margin: 20px auto; display: none; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.3);" />
+    <p><strong>Min Price:</strong> $<span id="minPrice"></span></p>
+    <p><strong>Type:</strong> <span id="auctionType"></span></p>
     <p><strong>Users:</strong> <span id="users"></span></p>
     <p><strong>Time Remaining:</strong> <span id="timer">--</span></p>
-    <input type="number" id="bidAmount" placeholder="Your Bid" />
-    <button onclick="placeBid()">Place Bid</button>
-    <button id="startAuctionBtn" onclick="startAuction()">Start Auction</button>
-    <button id="endAuctionBtn" onclick="endAuction()">End Auction</button>
-    <div id="log"></div>
-  </div>
 
-  <div id="newAuctionArea" style="display:none; margin-top: 20px;">
-    <h3>🔁 Start a New Auction</h3>
-    Item: <input type="text" id="newItem"><br>
-    Min Price: <input type="number" id="newMinPrice"><br>
-    Type (1=First, 2=Second): <input type="number" id="newType"><br>
-    <button onclick="startNewAuction()">Start New Auction</button>
-  </div>
+    <input id="bidAmount" type="number" placeholder="Your Bid" class="hidden" />
+    <button onclick="placeBid()" id="bidButton" class="hidden">Place Bid</button>
+
+    <button id="startAuctionBtn" onclick="startAuction()" class="hidden">Start Auction</button>
+    <button id="endAuctionBtn" onclick="endAuction()" class="hidden">End Auction</button>
+
+    <div id="log"></div>
+  </div>  
 
   <script>
-    let socket = io();
-    let username = "";
-    let auctionInitialized = false;
-    let isFirstUser = false;
-    let isHost = false; // Track if the user is the host
+    const socket = io();
+    let username = '';
+    let isHost = false;
+    let countdownInterval;
 
     function joinAuction() {
-      if (!username) {
-        username = document.getElementById('username').value;
-        if (!username) return alert("Enter your name first!");
-        socket.emit('join', { username });
+      username = document.getElementById("username").value;
+      if (!username) return alert("Please enter your name first.");
+      socket.emit("join", { username });
+      document.getElementById('usernameLabel').textContent = username;
+      document.getElementById('usernameDisplay').style.display = 'block';
+      document.getElementById("joinSection").style.display = "none";
+    }
 
-        // Assume first user is host (temporarily)
-        isHost = true;
-        document.getElementById('initAuction').style.display = 'block';
-        document.getElementById('startAuctionBtn').style.display = 'inline-block';
-        document.getElementById('endAuctionBtn').style.display = 'inline-block';
+    socket.on("you_are_host", function(data) {
+      isHost = data.isHost;
+      //document.getElementById("auctionArea").classList.remove("hidden");
+
+      if (isHost) {
+        // Host: show init + controls
+        document.getElementById("initAuction").classList.remove("hidden");
+        document.getElementById("auctionArea").classList.remove("hidden");
+        document.getElementById("startAuctionBtn").classList.remove("hidden");
+        document.getElementById("endAuctionBtn").classList.remove("hidden");
+        log("🛡️ You are the host.");
       } else {
-        isHost = false;
-        document.getElementById('bidAmount').style.display = 'inline-block';
-        document.querySelector("button[onclick='placeBid()']").style.display = 'inline-block';
+        // Bidder: show only lobby
+        document.getElementById("lobby").classList.remove("hidden");
+        log("⏳ You are a bidder. Waiting for host to start the auction...");
       }
-      document.getElementById('auctionArea').style.display = 'block';
-    }
-
-
-
-
-    function initAuction() {
-      const item = document.getElementById('item').value;
-      const min_price = parseFloat(document.getElementById('min_price').value);
-      const type = parseInt(document.getElementById('type').value);
-      if (!item || isNaN(min_price) || isNaN(type)) return alert("Please fill all auction details.");
-      socket.emit('initialize_auction', { item, min_price, type });
-      document.getElementById('initAuction').style.display = 'none';
-    }
-
-    function startAuction() {
-      socket.emit('start_auction');
-    }
-
-    function placeBid() {
-      const bid = parseFloat(document.getElementById('bidAmount').value);
-      if (!isNaN(bid)) {
-        socket.emit('place_bid', { bid });
-      }
-    }
-
-    socket.on('user_list', function(users) {
-      document.getElementById('users').innerText = users.join(', ');
     });
 
-    socket.on('auction_info', function(info) {
-      auctionInitialized = true;
-      document.getElementById('itemName').textContent = info.item;
-      document.getElementById('minPrice').textContent = info.min_price;
-      document.getElementById('auctionType').textContent = info.type == 1 ? 'First-Price' : 'Second-Price';
-      document.getElementById('auctionArea').style.display = 'block';
-      document.getElementById('initAuction').style.display = 'none';
-      log(`Auction Initialized: ${info.item} (min $${info.min_price})`);
+    socket.on("user_list", function(data) {
+      const lobbyList = document.getElementById("lobbyUserList");
+      lobbyList.innerHTML = '';
+
+      Object.entries(data.users).forEach(([sid, name]) => {
+        const li = document.createElement('li');
+        li.textContent = sid === data.host_sid ? `${name} 🛡️ (Host)` : name;
+        lobbyList.appendChild(li);
+      });
+
+      document.getElementById("users").innerText = Object.values(data.users).join(', ');
     });
 
-    socket.on('new_bid', function(data) {
+
+    socket.on("auction_info", function(info) {
+      document.getElementById("itemName").innerText = info.item;
+      document.getElementById("minPrice").innerText = info.min_price;
+      document.getElementById("auctionType").innerText = info.type == 1 ? "First-Price" : "Second-Price";
+
+      if (info.image) {
+        const img = document.getElementById("itemImage");
+        img.src = info.image;
+        img.style.display = "block";
+      }
+    });
+
+    socket.on("auction_started", function() {
+      log("⏳ Auction started! You may now place your bids.");
+
+      document.getElementById("lobby").classList.add("hidden");
+      document.getElementById("auctionArea").classList.remove("hidden");
+      document.getElementById("auctionArea").classList.add("fade-slide");
+      
+      startCountdown(30);
+      if (!isHost) {
+        document.getElementById("bidAmount").classList.remove("hidden");
+        document.getElementById("bidButton").classList.remove("hidden");
+      }
+    });
+
+    socket.on("new_bid", function(data) {
       log(`${data.user} placed a bid: $${data.bid}`);
     });
 
-    socket.on('winner', function (data) {
+    socket.on("winner", function(data) {
       clearInterval(countdownInterval);
-      document.getElementById("countdownText").textContent = "Auction Ended";
+      document.getElementById("timer").textContent = "Auction Ended";
       log(`🏆 ${data.message}`);
-
-      // 🎉 Trigger confetti
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 }
-      });
-
-      // Show start new auction for host
-      if (isHost) {
-        document.getElementById("newAuctionArea").style.display = "block";
-        document.getElementById("startAuctionBtn").style.display = "none";
-      }
+      confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
     });
 
+    function initAuction() {
+      const item = document.getElementById("item").value;
+      const min_price = parseFloat(document.getElementById("min_price").value);
+      const type = parseInt(document.getElementById("type").value);
+      const image = document.getElementById("itemImageUrl").value;
 
-    socket.on('auction_started', function() {
-      log('⏳ Auction started! You may now place your bids.');
-      startCountdown(30);
-    });
-
-    function log(message) {
-      const el = document.getElementById('log');
-      el.innerHTML += `<div>${message}</div>`;
-      el.scrollTop = el.scrollHeight;
+      if (!item || isNaN(min_price) || isNaN(type)) return alert("Fill all fields");
+      socket.emit("initialize_auction", { item, min_price, type, image});
+      document.getElementById("initAuction").classList.add("hidden");
     }
 
-    let countdownInterval;
-    let remainingTime = 0;
+    function startAuction() {
+      socket.emit("start_auction");
+    }
+
+    function endAuction() {
+      if (confirm("End the auction now?")) {
+        socket.emit("end_auction");
+        log("🚨 Auction ended by host.");
+      }
+    }
+
+    function placeBid() {
+      const bid = parseFloat(document.getElementById("bidAmount").value);
+      if (!isNaN(bid)) {
+        socket.emit("place_bid", { bid });
+      }
+    }
 
     function startCountdown(duration) {
-      clearInterval(countdownInterval);
-      remainingTime = duration;
-      document.getElementById("timer").textContent = `${remainingTime}s`;
-
+      let remaining = duration;
+      document.getElementById("timer").textContent = `${remaining}s`;
       countdownInterval = setInterval(() => {
-        remainingTime--;
-        if (remainingTime >= 0) {
-          document.getElementById("timer").textContent = `${remainingTime}s`;
-        } else {
-          clearInterval(countdownInterval);
-          document.getElementById("timer").textContent = "Auction Ended";
-        }
+        remaining--;
+        document.getElementById("timer").textContent = remaining > 0 ? `${remaining}s` : "Auction Ended";
+        if (remaining <= 0) clearInterval(countdownInterval);
       }, 1000);
     }
 
-
-    function endAuction() {
-      socket.emit('end_auction');
-      log("🚨 Auction manually ended by user.");
+    function log(msg) {
+      const el = document.getElementById("log");
+      el.innerHTML += `<div>${msg}</div>`;
+      el.scrollTop = el.scrollHeight;
     }
-
-    
-
-    function endAuction() {
-      const confirmEnd = confirm("Are you sure you want to end the auction early?");
-      if (confirmEnd) {
-        socket.emit('end_auction');
-        log("🚨 Auction manually ended by the host.");
-      }
-    }
-
-    function startNewAuction() {
-      const item = document.getElementById("newItem").value;
-      const min_price = parseFloat(document.getElementById("newMinPrice").value);
-      const type = parseInt(document.getElementById("newType").value);
-
-      if (!item || isNaN(min_price) || isNaN(type)) {
-        alert("Please fill out all new auction details.");
-        return;
-      }
-
-      socket.emit('initialize_auction', { item, min_price, type });
-      document.getElementById("newAuctionArea").style.display = "none";
-      log(`🎯 New auction initialized: ${item} ($${min_price})`);
-    }
-
-
-    socket.on('auction_ended', function() {
-      log("🚨 Auction has ended. You can start a new auction.");
-      document.getElementById("newAuctionArea").style.display = "block";
-      document.getElementById("auctionArea").style.display = "none";
-    });
-
-
   </script>
-
-  <div id="newAuctionArea" style="display:none; margin-top: 20px;">
-    <h3>🔁 Start a New Auction</h3>
-    Item: <input type="text" id="newItem"><br>
-    Min Price: <input type="number" id="newMinPrice"><br>
-    Type (1=First, 2=Second): <input type="number" id="newType"><br>
-    <button onclick="startNewAuction()">Start New Auction</button>
-  </div>
 </body>
 </html>
-<!-- End of auction.html -->

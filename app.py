@@ -8,6 +8,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode='eventlet')
 
+host_sid = None
+
 # Auction state
 auction_item = None
 lowest_price = None
@@ -25,10 +27,17 @@ def index():
 
 @socketio.on('join')
 def handle_join(data):
+    global host_sid
     username = data['username']
     sid = request.sid
     connected_users[sid] = username
+
+    # First user becomes host
+    if host_sid is None:
+        host_sid = sid
+
     emit('user_list', list(connected_users.values()), broadcast=True)
+
     if auction_initialized:
         emit('auction_info', {
             'item': auction_item,
@@ -55,10 +64,13 @@ def initialize_auction(data):
 @socketio.on('place_bid')
 def handle_bid(data):
     global bids
+    if auction_ended or request.sid == host_sid:
+        return  # Host can't bid
     bid_amount = data['bid']
     username = connected_users[request.sid]
     bids.append({'user': username, 'bid': bid_amount})
     emit('new_bid', {'user': username, 'bid': bid_amount}, broadcast=True)
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -84,14 +96,52 @@ def countdown_and_announce():
 
 @socketio.on('start_auction')
 def start_auction():
-    global auction_started, bids, winner_announced
+    global auction_started, bids, winner_announced, auction_ended
+    if request.sid != host_sid:
+        return  # Only host can start
     if not auction_started:
         auction_started = True
         bids = []
         winner_announced = False
+        auction_ended = False
         socketio.emit('auction_started')
         thread = threading.Thread(target=countdown_and_announce)
         thread.start()
+
+
+def announce_winner():
+    global winner_announced, auction_ended
+    if not bids:
+        socketio.emit('winner', {'message': 'Auction ended. No bids were placed.'})
+        winner_announced = True
+        auction_ended = True
+        return
+
+    # Sort by bid amount descending
+    sorted_bids = sorted(bids, key=lambda x: x['bid'], reverse=True)
+    winner = sorted_bids[0]
+
+    if auction_type == 1:
+        amount = winner['bid']  # First-price auction
+    else:
+        amount = sorted_bids[1]['bid'] if len(sorted_bids) > 1 else lowest_price
+
+    message = f"{winner['user']} won the auction with a bid of ${amount}!"
+    socketio.emit('winner', {'message': message})  # 👈 Broadcast to all users
+
+    print(message)  # Optional: log to server console
+    winner_announced = True
+    auction_ended = True
+
+
+
+@socketio.on('end_auction')
+def end_auction():
+    global auction_ended
+    if request.sid != host_sid:
+        return  # Only host can end
+    if not auction_ended:
+        announce_winner()
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)

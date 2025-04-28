@@ -3,11 +3,18 @@
 <head>
   <title>Trojan Auctions</title>
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
     body { font-family: Arial; padding: 2em; background-color: #f9f9f9; }
     h1 { color: rgb(220, 140, 20); }
     #log { border: 1px solid #ccc; padding: 1em; height: 300px; overflow-y: scroll; background: #fff; margin-top: 1em; }
     input, button { margin: 5px 0; padding: 8px; }
+  </style>
+  <style>
+    #initAuction, #endAuctionBtn, #startAuctionBtn {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -37,8 +44,8 @@
     <p><strong>Time Remaining:</strong> <span id="timer">--</span></p>
     <input type="number" id="bidAmount" placeholder="Your Bid" />
     <button onclick="placeBid()">Place Bid</button>
-    <button onclick="startAuction()">Start Auction</button>
-    <button id="endAuctionBtn" style="display:none;" onclick="endAuction()">End Auction</button>
+    <button id="startAuctionBtn" onclick="startAuction()">Start Auction</button>
+    <button id="endAuctionBtn" onclick="endAuction()">End Auction</button>
     <div id="log"></div>
   </div>
 
@@ -55,17 +62,28 @@
     let username = "";
     let auctionInitialized = false;
     let isFirstUser = false;
+    let isHost = false; // Track if the user is the host
 
     function joinAuction() {
       if (!username) {
         username = document.getElementById('username').value;
         if (!username) return alert("Enter your name first!");
         socket.emit('join', { username });
-        isFirstUser = true; // 👈 Host logic!
+
+        // Assume first user is host (temporarily)
+        isHost = true;
+        document.getElementById('initAuction').style.display = 'block';
+        document.getElementById('startAuctionBtn').style.display = 'inline-block';
+        document.getElementById('endAuctionBtn').style.display = 'inline-block';
+      } else {
+        isHost = false;
+        document.getElementById('bidAmount').style.display = 'inline-block';
+        document.querySelector("button[onclick='placeBid()']").style.display = 'inline-block';
       }
-      document.getElementById('initAuction').style.display = 'block';
-      document.getElementById('endAuctionBtn').style.display = 'inline-block';
+      document.getElementById('auctionArea').style.display = 'block';
     }
+
+
 
 
     function initAuction() {
@@ -106,14 +124,25 @@
       log(`${data.user} placed a bid: $${data.bid}`);
     });
 
-    socket.on('winner', function(data) {
+    socket.on('winner', function (data) {
       clearInterval(countdownInterval);
-      document.getElementById("timer").textContent = "Auction Ended";
+      document.getElementById("countdownText").textContent = "Auction Ended";
       log(`🏆 ${data.message}`);
-      if (isFirstUser) {
+
+      // 🎉 Trigger confetti
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
+
+      // Show start new auction for host
+      if (isHost) {
         document.getElementById("newAuctionArea").style.display = "block";
+        document.getElementById("startAuctionBtn").style.display = "none";
       }
     });
+
 
     socket.on('auction_started', function() {
       log('⏳ Auction started! You may now place your bids.');
